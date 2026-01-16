@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.90.1",
+    "dotenv": "^17.2.3",
     "next": "16.1.2",
     "openai": "^6.16.0",
     "react": "19.2.3",
@@ -23,6 +24,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.1.2",
     "tailwindcss": "^4",
+    "tsx": "^4.21.0",
     "typescript": "^5"
   }
 }
