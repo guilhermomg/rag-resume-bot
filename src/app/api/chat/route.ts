@@ -17,6 +17,10 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 const openaiApiKey = getEnvVar('OPENAI_API_KEY');
 const openai = new OpenAI({ apiKey: openaiApiKey });
 
+const maxTokens = parseInt(process.env.OPENAI_MAX_TOKENS || '1000', 10);
+const precisionThreshold = parseFloat(process.env.PRECISION_THRESHOLD || '0.20');
+const maxContextDocs = parseInt(process.env.MAX_CONTEXT_DOCS || '15', 10);
+
 interface SupabaseDocument {
   content: string;
   metadata?: Record<string, unknown>;
@@ -95,8 +99,16 @@ export async function POST(req: NextRequest) {
       .sort((a: { doc: SupabaseDocument; year: number }, b: { doc: SupabaseDocument; year: number }) => a.year - b.year)
       .map((item: { doc: SupabaseDocument; year: number }) => item.doc);
 
+    // Stage 2: Apply precision filter to reduce noise
+    // Filter by similarity threshold and limit to top results
+    const filteredDocs = sortedDocs
+      .filter((doc: SupabaseDocument) => (doc.similarity ?? 0) >= precisionThreshold)
+      .slice(0, maxContextDocs);
+
+    console.log(`After precision filter (threshold: ${precisionThreshold}): ${filteredDocs.length} documents`);
+
     // Step 3: Combine retrieved documents into context
-    const context = sortedDocs?.map((doc: SupabaseDocument) => doc.content).join('\n\n') || 'No relevant information found.';
+    const context = filteredDocs?.map((doc: SupabaseDocument) => doc.content).join('\n\n') || 'No relevant information found.';
 
     // Step 4: Create the system prompt with context
     const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
@@ -111,7 +123,7 @@ export async function POST(req: NextRequest) {
         { role: 'user', content: message },
       ],
       temperature: 0.7,
-      max_tokens: 500,
+      max_tokens: maxTokens,
       stream: true,
     });
 
