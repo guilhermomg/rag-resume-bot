@@ -60,35 +60,40 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Sort documents chronologically by extracting dates
-    const sortedDocs = [...docs].sort((a, b) => {
-      const extractFirstYear = (text: string): number => {
-        // Try multiple date patterns
-        const patterns = [
-          /\[EMPLOYMENT: (\d{4})-/,  // [EMPLOYMENT: YYYY-YYYY]
-          /\*([A-Za-z]+ \d{4})/,     // *Jan 2021
-          /\((\d{4})\)/,             // (YYYY)
-          /(\d{4})/                  // Any YYYY
-        ];
-        
-        for (let patternIndex = 0; patternIndex < patterns.length; patternIndex++) {
-          const match = text.match(patterns[patternIndex]);
-          if (match) {
-            // For date format pattern (index 1), extract year from "Month YYYY"
-            const yearStr = patternIndex === 1 ? match[1].split(' ')[1] : match[1];
-            const year = parseInt(yearStr);
-            if (!isNaN(year) && year > 1900 && year < 2100) {
-              return year;
-            }
+    // Extract year from document content
+    const extractFirstYear = (text: string): number => {
+      // Try multiple date patterns
+      const patterns = [
+        /\[EMPLOYMENT: (\d{4})-/,  // [EMPLOYMENT: YYYY-YYYY]
+        /\*([A-Za-z]+ \d{4})/,     // *Jan 2021
+        /\((\d{4})\)/,             // (YYYY)
+        /(\d{4})/                  // Any YYYY
+      ];
+      
+      for (let patternIndex = 0; patternIndex < patterns.length; patternIndex++) {
+        const match = text.match(patterns[patternIndex]);
+        if (match) {
+          // For date format pattern (index 1), extract year from "Month YYYY"
+          const yearStr = patternIndex === 1 ? match[1].split(' ')[1] : match[1];
+          const year = parseInt(yearStr);
+          if (!isNaN(year) && year > 1900 && year < 2100) {
+            return year;
           }
         }
-        return 9999; // No date found, push to end
-      };
+      }
+      return 9999; // No date found, push to end
+    };
 
-      const yearA = extractFirstYear(a.content);
-      const yearB = extractFirstYear(b.content);
-      return yearA - yearB; // Earliest first
-    });
+    // Pre-compute years for all documents to avoid redundant parsing
+    const docsWithYears: Array<{ doc: SupabaseDocument; year: number }> = docs.map((doc: SupabaseDocument) => ({
+      doc,
+      year: extractFirstYear(doc.content)
+    }));
+
+    // Sort by pre-computed years (earliest first)
+    const sortedDocs = docsWithYears
+      .sort((a: { doc: SupabaseDocument; year: number }, b: { doc: SupabaseDocument; year: number }) => a.year - b.year)
+      .map((item: { doc: SupabaseDocument; year: number }) => item.doc);
 
     // Step 3: Combine retrieved documents into context
     const context = sortedDocs?.map((doc: SupabaseDocument) => doc.content).join('\n\n') || 'No relevant information found.';
