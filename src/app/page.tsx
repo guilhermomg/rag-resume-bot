@@ -73,10 +73,29 @@ export default function Home() {
       }
     } catch (error) {
       console.error('Error:', error);
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: 'Sorry, something went wrong. Please try again.'
-      }]);
+      setMessages(prev => {
+        const newMessages = [...prev];
+        const lastIndex = newMessages.length - 1;
+        const errorContent = 'Sorry, something went wrong. Please try again.';
+
+        if (
+          lastIndex >= 0 &&
+          newMessages[lastIndex].role === 'assistant' &&
+          newMessages[lastIndex].content === ''
+        ) {
+          newMessages[lastIndex] = {
+            role: 'assistant',
+            content: errorContent,
+          };
+          return newMessages;
+        }
+
+        newMessages.push({
+          role: 'assistant',
+          content: errorContent,
+        });
+        return newMessages;
+      });
     } finally {
       setLoading(false);
     }
