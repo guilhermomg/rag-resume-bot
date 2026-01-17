@@ -77,6 +77,11 @@ function chunkText(text: string, maxChars: number): string[] {
     
     // Skip title-only sections (lines that don't have substantial content)
     if (trimmedSection.length < 50 || !trimmedSection.includes('\n')) {
+      console.warn(
+        'Skipping short/one-line section during chunking:',
+        `(length=${trimmedSection.length})`,
+        `"${trimmedSection.slice(0, 100)}${trimmedSection.length > 100 ? '...' : ''}"`
+      );
       continue;
     }
 
