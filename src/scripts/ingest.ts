@@ -28,7 +28,7 @@ const files = fs.readdirSync(dataDir).filter(f => f.endsWith('.md') || f.endsWit
 
 async function ingest() {
   // clear existing
-  await supabase.from('documents').delete().neq('id', 0);
+  await supabase.from('documents').delete();
 
   for (const file of files) {
     const content = fs.readFileSync(path.join(dataDir, file), 'utf-8');
