@@ -33,7 +33,19 @@ export default function Home() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to get response');
+        let errorMessage = 'Sorry, something went wrong.';
+
+        if (response.status === 429) {
+          errorMessage = 'Rate limited. Please wait a moment and try again.';
+        } else if (response.status === 500 || response.status === 503) {
+          errorMessage = 'Server error. Please try again later.';
+        } else if (response.status === 400) {
+          errorMessage = 'Invalid request. Please try again.';
+        } else if (response.status >= 500) {
+          errorMessage = 'Server error. Please try again later.';
+        }
+
+        throw new Error(errorMessage);
       }
 
       const reader = response.body?.getReader();
@@ -41,8 +53,12 @@ export default function Home() {
       let assistantMessage = '';
       let messageAdded = false;
 
+      if (!reader) {
+        throw new Error('Response body is not readable');
+      }
+
       while (true) {
-        const { done, value } = await reader!.read();
+        const { done, value } = await reader.read();
         if (done) break;
 
         const chunk = decoder.decode(value);
@@ -77,9 +93,18 @@ export default function Home() {
       }
     } catch (error) {
       console.error('Error:', error);
+      let userFriendlyMessage = 'Sorry, something went wrong. Please try again.';
+
+      if (error instanceof TypeError) {
+        // Network error or fetch-related error
+        userFriendlyMessage = 'Network error. Please check your connection and try again.';
+      } else if (error instanceof Error) {
+        userFriendlyMessage = error.message;
+      }
+
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: 'Sorry, something went wrong. Please try again.'
+        content: userFriendlyMessage
       }]);
     } finally {
       setLoading(false);
