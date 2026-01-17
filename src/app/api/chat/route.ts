@@ -18,7 +18,7 @@ const openaiApiKey = getEnvVar('OPENAI_API_KEY');
 const openai = new OpenAI({ apiKey: openaiApiKey });
 
 const maxTokens = parseInt(process.env.OPENAI_MAX_TOKENS || '1000', 10);
-const precisionThreshold = parseFloat(process.env.PRECISION_THRESHOLD || '0.20');
+const similarityThreshold = parseFloat(process.env.PRECISION_THRESHOLD || '0.20');
 const maxContextDocs = parseInt(process.env.MAX_CONTEXT_DOCS || '15', 10);
 
 interface SupabaseDocument {
