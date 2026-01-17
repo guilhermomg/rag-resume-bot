@@ -2,11 +2,20 @@ import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
-const supabaseUrl = process.env.SUPABASE_URL!;
-const supabaseKey = process.env.SUPABASE_SERVICE_KEY!;
+function getEnvVar(name: string): string {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(`Missing required environment variable: ${name}`);
+  }
+  return value;
+}
+
+const supabaseUrl = getEnvVar('SUPABASE_URL');
+const supabaseKey = getEnvVar('SUPABASE_SERVICE_KEY');
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
+const openaiApiKey = getEnvVar('OPENAI_API_KEY');
+const openai = new OpenAI({ apiKey: openaiApiKey });
 
 interface SupabaseDocument {
   content: string;
