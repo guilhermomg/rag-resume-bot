@@ -62,11 +62,11 @@ export async function POST(req: NextRequest) {
           /(\d{4})/                  // Any YYYY
         ];
         
-        for (let i = 0; i < patterns.length; i++) {
-          const match = text.match(patterns[i]);
+        for (let patternIndex = 0; patternIndex < patterns.length; patternIndex++) {
+          const match = text.match(patterns[patternIndex]);
           if (match) {
             // For date format pattern (index 1), extract year from "Month YYYY"
-            const yearStr = i === 1 ? match[1].split(' ')[1] : match[1];
+            const yearStr = patternIndex === 1 ? match[1].split(' ')[1] : match[1];
             const year = parseInt(yearStr);
             if (!isNaN(year) && year > 1900 && year < 2100) {
               return year;
