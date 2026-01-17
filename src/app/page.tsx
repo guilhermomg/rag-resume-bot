@@ -2,8 +2,14 @@
 import { useState, useRef, useEffect } from 'react';
 
 export default function Home() {
+  const firstName = process.env.NEXT_PUBLIC_FIRST_NAME;
+  const lastName = process.env.NEXT_PUBLIC_LAST_NAME;
+
+  if (!firstName || !lastName) {
+    throw new Error('Missing required environment variables: NEXT_PUBLIC_FIRST_NAME and NEXT_PUBLIC_LAST_NAME');
+  }
   const [messages, setMessages] = useState<{ role: string; content: string }[]>([
-    { role: 'assistant', content: '👋 Hi! Ask me anything about Guilhermo\'s experience, skills, or projects.' }
+    { role: 'assistant', content: `👋 Hi! Ask me anything about ${firstName}'s experience, skills, or projects.` }
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -122,7 +128,7 @@ export default function Home() {
     <div className="flex flex-col h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-blue-600 text-white p-4 shadow-lg">
-        <h1 className="text-2xl font-bold">Guilhermo González - Resume Bot</h1>
+        <h1 className="text-2xl font-bold">{firstName} {lastName} - Resume Bot</h1>
         <p className="text-blue-100 text-sm">Ask me anything about my experience, skills, and projects</p>
       </div>
 
@@ -148,8 +154,8 @@ export default function Home() {
             <div className="bg-white rounded-lg p-4 shadow-md border border-gray-200">
               <div className="flex space-x-2">
                 <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce animate-delay-100"></div>
+                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce animate-delay-200"></div>
               </div>
             </div>
           </div>
