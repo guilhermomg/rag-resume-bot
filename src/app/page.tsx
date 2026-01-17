@@ -39,9 +39,7 @@ export default function Home() {
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
       let assistantMessage = '';
-
-      // Add empty assistant message that we'll update
-      setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
+      let messageAdded = false;
 
       while (true) {
         const { done, value } = await reader!.read();
@@ -56,15 +54,21 @@ export default function Home() {
               const data = JSON.parse(line.slice(6));
               assistantMessage += data.content || '';
 
-              // Update the last message (assistant's response)
-              setMessages(prev => {
-                const newMessages = [...prev];
-                newMessages[newMessages.length - 1] = {
-                  role: 'assistant',
-                  content: assistantMessage
-                };
-                return newMessages;
-              });
+              // Add the assistant message on first content chunk
+              if (!messageAdded) {
+                setMessages(prev => [...prev, { role: 'assistant', content: assistantMessage }]);
+                messageAdded = true;
+              } else {
+                // Update existing message
+                setMessages(prev => {
+                  const newMessages = [...prev];
+                  newMessages[newMessages.length - 1] = {
+                    role: 'assistant',
+                    content: assistantMessage
+                  };
+                  return newMessages;
+                });
+              }
             } catch (e) {
               // Skip invalid JSON
             }
@@ -73,29 +77,10 @@ export default function Home() {
       }
     } catch (error) {
       console.error('Error:', error);
-      setMessages(prev => {
-        const newMessages = [...prev];
-        const lastIndex = newMessages.length - 1;
-        const errorContent = 'Sorry, something went wrong. Please try again.';
-
-        if (
-          lastIndex >= 0 &&
-          newMessages[lastIndex].role === 'assistant' &&
-          newMessages[lastIndex].content === ''
-        ) {
-          newMessages[lastIndex] = {
-            role: 'assistant',
-            content: errorContent,
-          };
-          return newMessages;
-        }
-
-        newMessages.push({
-          role: 'assistant',
-          content: errorContent,
-        });
-        return newMessages;
-      });
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: 'Sorry, something went wrong. Please try again.'
+      }]);
     } finally {
       setLoading(false);
     }
