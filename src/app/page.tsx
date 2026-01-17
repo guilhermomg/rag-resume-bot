@@ -5,11 +5,11 @@ export default function Home() {
   const firstName = process.env.NEXT_PUBLIC_FIRST_NAME;
   const lastName = process.env.NEXT_PUBLIC_LAST_NAME;
 
-  if (!firstName || !lastName) {
-    throw new Error('Missing required environment variables: NEXT_PUBLIC_FIRST_NAME and NEXT_PUBLIC_LAST_NAME');
-  }
+  const displayFirstName = firstName || 'the candidate';
+  const displayLastName = lastName || '';
+
   const [messages, setMessages] = useState<{ role: string; content: string }[]>([
-    { role: 'assistant', content: `👋 Hi! Ask me anything about ${firstName}'s experience, skills, or projects.` }
+    { role: 'assistant', content: `👋 Hi! Ask me anything about ${displayFirstName}'s experience, skills, or projects.` }
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
