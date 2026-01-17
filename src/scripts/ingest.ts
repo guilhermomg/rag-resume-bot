@@ -18,6 +18,33 @@ if (!supabaseUrl || !supabaseKey || !openaiKey) {
 const supabase = createClient(supabaseUrl, supabaseKey);
 const openai = new OpenAI({ apiKey: openaiKey });
 
+// Rate limiting configuration
+const RATE_LIMIT_DELAY = parseInt(process.env.OPENAI_RATE_LIMIT_DELAY || '100'); // ms between requests
+const MAX_RETRIES = 3;
+const INITIAL_RETRY_DELAY = 1000; // ms
+
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+async function createEmbeddingWithRetry(text: string, attempt = 1): Promise<number[]> {
+  try {
+    const response = await openai.embeddings.create({
+      model: 'text-embedding-3-small',
+      input: text,
+    });
+    return response.data[0].embedding;
+  } catch (error: unknown) {
+    const apiError = error as { status?: number; message?: string };
+    if (apiError.status === 429 && attempt < MAX_RETRIES) {
+      // Rate limit error - exponential backoff
+      const retryDelay = INITIAL_RETRY_DELAY * Math.pow(2, attempt - 1);
+      console.warn(`Rate limited. Retrying in ${retryDelay}ms (attempt ${attempt}/${MAX_RETRIES})`);
+      await delay(retryDelay);
+      return createEmbeddingWithRetry(text, attempt + 1);
+    }
+    throw error;
+  }
+}
+
 const dataDir = path.join(process.cwd(), 'data');
 
 if (!fs.existsSync(dataDir)) {
@@ -37,10 +64,7 @@ async function ingest() {
     const chunks = chunkText(content, 800);
     
     for (let i = 0; i < chunks.length; i++) {
-      const embeddingResponse = await openai.embeddings.create({
-        model: 'text-embedding-3-small',
-        input: chunks[i],
-      });
+      const embedding = await createEmbeddingWithRetry(chunks[i]);
 
       const { error } = await supabase
         .from('documents')
@@ -51,14 +75,19 @@ async function ingest() {
             chunk: i,
             title: path.basename(file, path.extname(file)),
           },
-          embedding: embeddingResponse.data[0].embedding,
+          embedding: embedding,
         });
 
       if (error) {
         console.error('Insert error for file', file, 'chunk', i, ':', error);
         throw error;
       } else {
-        console.log(`Ingested chunk ${i} from ${file}`);
+        console.log(`Ingested chunk ${i}/${chunks.length - 1} from ${file}`);
+      }
+
+      // Rate limiting: delay between requests
+      if (i < chunks.length - 1) {
+        await delay(RATE_LIMIT_DELAY);
       }
     }
   }
