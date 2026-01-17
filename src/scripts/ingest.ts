@@ -19,6 +19,11 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 const openai = new OpenAI({ apiKey: openaiKey });
 
 const dataDir = path.join(process.cwd(), 'data');
+
+if (!fs.existsSync(dataDir)) {
+  console.error(`Data directory not found: ${dataDir}`);
+  process.exit(1);
+}
 const files = fs.readdirSync(dataDir).filter(f => f.endsWith('.md') || f.endsWith('.txt'));
 
 async function ingest() {
