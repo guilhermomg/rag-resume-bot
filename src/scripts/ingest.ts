@@ -57,18 +57,43 @@ async function ingest() {
 }
 
 function chunkText(text: string, maxChars: number): string[] {
-  const sentences = text.split(/(?<=[.!?])\s+/);
+  // Split by markdown headers (###) to keep Q&A pairs together
+  const sections = text.split(/(?=^###\s)/gm);
   const chunks: string[] = [];
   let currentChunk = '';
 
-  for (const sentence of sentences) {
-    if ((currentChunk + sentence).length > maxChars && currentChunk) {
+  for (const section of sections) {
+    const trimmedSection = section.trim();
+    if (!trimmedSection) continue;
+    
+    // Skip title-only sections (lines that don't have substantial content)
+    if (trimmedSection.length < 50 || !trimmedSection.includes('\n')) {
+      continue;
+    }
+
+    // Extract date range if this looks like a job entry
+    // Format: ### Job Title\n**Company** | Position | *Jan 2021 - Jul 2022*
+    const dateMatch = trimmedSection.match(/\*([A-Za-z]+ \d{4})\s*-\s*([A-Za-z]+ \d{4}|Present)\*/);
+    let enrichedSection = trimmedSection;
+    
+    if (dateMatch) {
+      const startDate = dateMatch[1];
+      const endDate = dateMatch[2];
+      // Extract year from dates for temporal marker
+      const startYear = startDate.split(' ')[1];
+      const endYear = endDate === 'Present' ? new Date().getFullYear().toString() : endDate.split(' ')[1];
+      enrichedSection = `[EMPLOYMENT: ${startYear}-${endYear}]\n\n${trimmedSection}`;
+    }
+
+    // If adding this section would exceed max and we have content, push current chunk
+    if (currentChunk && (currentChunk + '\n\n' + enrichedSection).length > maxChars) {
       chunks.push(currentChunk.trim());
-      currentChunk = sentence;
+      currentChunk = enrichedSection;
     } else {
-      currentChunk += sentence + ' ';
+      currentChunk += (currentChunk ? '\n\n' : '') + enrichedSection;
     }
   }
+  
   if (currentChunk) chunks.push(currentChunk.trim());
   return chunks;
 }
