@@ -54,8 +54,12 @@ async function ingest() {
           embedding: embeddingResponse.data[0].embedding,
         });
 
-      if (error) console.error('Insert error:', error);
-      else console.log(`Ingested chunk ${i} from ${file}`);
+      if (error) {
+        console.error('Insert error for file', file, 'chunk', i, ':', error);
+        throw error;
+      } else {
+        console.log(`Ingested chunk ${i} from ${file}`);
+      }
     }
   }
   console.log('Ingestion complete!');
