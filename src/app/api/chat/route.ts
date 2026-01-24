@@ -102,10 +102,10 @@ export async function POST(req: NextRequest) {
     // Stage 2: Apply precision filter to reduce noise
     // Filter by similarity threshold and limit to top results
     const filteredDocs = sortedDocs
-      .filter((doc: SupabaseDocument) => (doc.similarity ?? 0) >= precisionThreshold)
+      .filter((doc: SupabaseDocument) => (doc.similarity ?? 0) >= similarityThreshold)
       .slice(0, maxContextDocs);
 
-    console.log(`After precision filter (threshold: ${precisionThreshold}): ${filteredDocs.length} documents`);
+    console.log(`After precision filter (threshold: ${similarityThreshold}): ${filteredDocs.length} documents`);
 
     // Step 3: Combine retrieved documents into context
     const context = filteredDocs?.map((doc: SupabaseDocument) => doc.content).join('\n\n') || 'No relevant information found.';
