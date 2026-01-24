@@ -2,6 +2,12 @@ import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
 function getEnvVar(name: string): string {
   const value = process.env[name];
   if (!value) {
@@ -32,7 +38,10 @@ export async function POST(req: NextRequest) {
     const { message } = await req.json();
 
     if (!message) {
-      return NextResponse.json({ error: 'Message is required' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Message is required' },
+        { status: 400, headers: corsHeaders }
+      );
     }
 
     // Step 1: Generate embedding for the user's question
@@ -149,6 +158,7 @@ export async function POST(req: NextRequest) {
 
     return new Response(stream, {
       headers: {
+        ...corsHeaders,
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
         'Connection': 'keep-alive',
@@ -159,7 +169,11 @@ export async function POST(req: NextRequest) {
     console.error('API Error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
+}
+
+export async function OPTIONS(req: NextRequest) {
+  return NextResponse.json({}, { headers: corsHeaders });
 }
